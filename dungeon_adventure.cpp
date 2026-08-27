@@ -16,16 +16,16 @@ class Direction {
         directionKey = dir;
         switch (directionKey) {
             case 'w':
-                direction_name = "North";
+                direction_name = "Norte";
                 break;
             case 's':
-                direction_name = "South";
+                direction_name = "Sur";
                 break;
             case 'a':
-                direction_name = "East";
+                direction_name = "Este";
                 break;
             case 'd':
-                direction_name = "West";
+                direction_name = "Oeste";
                 break;
             default:
                 direction_name = "Unknown";
@@ -43,6 +43,7 @@ class Player {
     int player_health;
     bool player_has_lockPick;
     bool player_has_compass;
+    bool player_has_torch;
     int player_score;
 
     public: Player (string name) {
@@ -50,6 +51,7 @@ class Player {
         player_health = 80;
         player_has_lockPick = false;
         player_has_compass = false;
+        player_has_torch = false;
         player_score = 0;
     };
 
@@ -57,6 +59,7 @@ class Player {
     int getPlayerHealth() {return player_health;}
     bool hasPlayerHasLockPick() {return player_has_lockPick;}
     bool hasPlayerHasCompass() {return player_has_compass;}
+    bool hasPlayerHasTorch() {return player_has_torch;}
     int getPlayerScore() {return player_score;}
 
     void setPlayerHealth(int health) {player_health = health;}
@@ -66,6 +69,7 @@ class Player {
 
     void pickUpLockPick() {player_has_lockPick = true; player_score ++;}
     void pickUpCompass() {player_has_compass = true;}
+    void pickUpTorch() {player_has_torch = true; player_score ++;}
 
     void displayPlayerStats() {
         cout << "\n--- " << player_name << " ---" << endl;
@@ -78,7 +82,10 @@ class Player {
         if (player_has_compass) {
             cout << "- [Compass]" << endl;
         }
-        if (!player_has_lockPick && !player_has_compass) {
+        if (player_has_torch) {
+            cout << "- [Torch]" << endl;
+        }
+        if (!player_has_lockPick && !player_has_compass && !player_has_torch) {
             cout << "- [Empty]" << endl;
         }
     }
@@ -106,6 +113,7 @@ int main(){
     Player player("Adventurer");
     Room entrance("sala de entrada", "hay una habitacion con dos pasajes");
     Room corridor("corredor oscuro", "un pasillo angosto, se escuchan gotas de fondo");
+    Room chamber("camara de las trampas", "una sala amplia con piedras sueltas y una vieja antorcha");
 
     cout << "\n========================================" << endl;
     cout << "  UNA PROFESORA DE GEOGRAFIA PERDIDA EN LAS MAZMORRAS" << endl;
@@ -140,51 +148,83 @@ int main(){
         if(entranceDir.isValid() && (entranceDir.getDirectionKey() == 'w' || entranceDir.getDirectionKey() == 'W')) {
             cout << "Entras en el corredor oscuro..." << endl;
             cout << "\n--- " << corridor.getRoomName() << " ---" << endl;
-            cout << "Ves cuatro esquinas, a que direccion quieres ir?: ";
-            char corridorChoice;
-            cin >> corridorChoice;
-
-            Direction dir(corridorChoice);
-
-            if(dir.isValid()) {
-                cout << "\nTe diriges hacia " << dir.getDirectionName() << "..." << endl;
-
-                switch (dir.getDirectionKey()){
-                    case 'w':
-                    case 'W':
-                        cout << "Encuentras una brújula" << endl;
-                        player.pickUpCompass();
-                        break;
-
-                    case 's':
-                    case 'S':
-                        cout << "Sientes un frio penetrate" << endl;
-                        cout << "Sin lugar seguro para descansar" << endl;
-                        player.damagetaken(5);
-                        cout << "-5 de daño por frio " << endl;
-                        break;
-                    
-                    case 'a':
-                    case 'A':
-                        cout << "Encuentras una ganzua oxidada" << endl;
-                        player.pickUpLockPick();
-                        player.addPlayerScore(1);
-                        break;
-
-                    case 'd':
-                    case 'D':
-                        cout << "Has encontrado una puerta con llave" << endl;
-                        cout << "Necesitas algo para abrirla" << endl;
-                        break;
+            while (true) {
+                if (player.hasPlayerHasTorch()) {
+                    cout << "La luz de la antorcha revela las cuatro esquinas:" << endl;
+                    cout << "[w] Brújula, [s] Zona fría, [a] Ganzúa oxidada, [d] Puerta hacia la cámara de las trampas" << endl;
+                } else {
+                    cout << "Ves cuatro esquinas en la oscuridad." << endl;
                 }
-            } else {
-                cout << "Direccion invalida." << endl;
+                cout << "¿A qué dirección quieres ir? (w/s/a/d): ";
+                char corridorChoice;
+                cin >> corridorChoice;
+
+                Direction dir(corridorChoice);
+
+                if(dir.isValid()) {
+                    cout << "\nTe diriges hacia " << dir.getDirectionName() << "..." << endl;
+
+                    switch (dir.getDirectionKey()){
+                        case 'w':
+                        case 'W':
+                            cout << "Encuentras una brújula" << endl;
+                            player.pickUpCompass();
+                            break;
+
+                        case 's':
+                        case 'S':
+                            cout << "Sientes un frio penetrate" << endl;
+                            cout << "Sin lugar seguro para descansar" << endl;
+                            player.damagetaken(5);
+                            cout << "-5 de daño por frio " << endl;
+                            break;
+                        
+                        case 'a':
+                        case 'A':
+                            cout << "Encuentras una ganzua oxidada" << endl;
+                            player.pickUpLockPick();
+                            player.addPlayerScore(1);
+                            break;
+
+                        case 'd':
+                        case 'D':
+                            cout << "Usas la puerta y entras en la " << chamber.getRoomName() << "..." << endl;
+                            cout << chamber.getRoomDescription() << endl;
+                            bool trapActivated = false;
+                            while (true) {
+                                char chamberChoice;
+                                if (!trapActivated) {
+                                    cout << "[w] Avanzar hacia la antorcha, [s] Volver al corredor: ";
+                                } else {
+                                    cout << "[s] Volver al corredor: ";
+                                }
+                                cin >> chamberChoice;
+
+                                if ((chamberChoice == 'w' || chamberChoice == 'W') && !trapActivated) {
+                                    cout << "Encuentras una antorcha y la recoges." << endl;
+                                    player.pickUpTorch();
+                                    cout << "De repente, una trampa se activa y caen piedras del techo." << endl;
+                                    player.damagetaken(12);
+                                    cout << "-12 de dano por las piedras" << endl;
+                                    cout << "La trampa bloquea el avance. Solo puedes volver." << endl;
+                                    trapActivated = true;
+                                } else if (chamberChoice == 's' || chamberChoice == 'S') {
+                                    cout << "Regresas al corredor oscuro." << endl;
+                                    break;
+                                } else {
+                                    cout << "Direccion invalida. En esta habitacion solo puedes usar W o S." << endl;
+                                }
+                            }
+                            break;
+                    }
+                } else {
+                    cout << "Direccion invalida." << endl;
+                }
+
+                player.displayPlayerStats();
+
+                cout << "\n--- Puedes continuar explorando la mazmorra ---" << endl;
             }
-
-            player.displayPlayerStats();
-
-            cout << "\n--- a la espera de mas aventura  ---" << endl;
-            break;
 
         }
         else if(entranceDir.isValid() && (entranceDir.getDirectionKey() == 's' || entranceDir.getDirectionKey() == 'S')) {
